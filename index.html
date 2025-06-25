@@ -110,6 +110,7 @@
       }
 
       update() {
+        if (!this.alive) return;
         this.vy += gravity;
         this.x += this.vx;
         this.y += this.vy;
@@ -120,8 +121,25 @@
           const dy = this.y - other.y;
           const dist = Math.hypot(dx, dy);
           if (dist < this.radius + other.radius) {
-            this.vy = 0;
-            break;
+            const overlap = this.radius + other.radius - dist;
+            const angle = Math.atan2(dy, dx);
+            this.x += Math.cos(angle) * (overlap / 2);
+            this.y += Math.sin(angle) * (overlap / 2);
+            other.x -= Math.cos(angle) * (overlap / 2);
+            other.y -= Math.sin(angle) * (overlap / 2);
+
+            // 合体処理: 同じタイプなら
+            if (this.type === other.type && this.type + 1 < numTypes) {
+              const newType = this.type + 1;
+              const newFruit = new Fruit((this.x + other.x) / 2, (this.y + other.y) / 2, newType);
+              newFruit.vx = (this.vx + other.vx) / 2;
+              newFruit.vy = (this.vy + other.vy) / 2;
+              fruits.push(newFruit);
+              updateScore((newType) * 10);
+              this.alive = false;
+              other.alive = false;
+              break;
+            }
           }
         }
 
@@ -138,6 +156,7 @@
       }
 
       draw() {
+        if (!this.alive) return;
         ctx.save();
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -145,43 +164,6 @@
         ctx.drawImage(this.image, this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
         ctx.restore();
       }
-    }
-
-    function checkCollisions() {
-      let merged;
-      do {
-        merged = false;
-        const newFruits = [];
-        const toRemove = new Set();
-
-        for (let i = 0; i < fruits.length; i++) {
-          for (let j = i + 1; j < fruits.length; j++) {
-            const f1 = fruits[i];
-            const f2 = fruits[j];
-            if (!f1.alive || !f2.alive || f1.type !== f2.type) continue;
-
-            const dx = f1.x - f2.x;
-            const dy = f1.y - f2.y;
-            const dist = Math.hypot(dx, dy);
-
-            if (dist < (f1.radius + f2.radius) * 0.9) {
-              if (f1.type + 1 < numTypes) {
-                const newFruit = new Fruit((f1.x + f2.x) / 2, (f1.y + f2.y) / 2, f1.type + 1);
-                newFruit.vx = (f1.vx + f2.vx) / 2;
-                newFruit.vy = (f1.vy + f2.vy) / 2;
-                newFruits.push(newFruit);
-                updateScore((f1.type + 1) * 10);
-                toRemove.add(f1);
-                toRemove.add(f2);
-                merged = true;
-              }
-            }
-          }
-        }
-
-        fruits = fruits.filter(f => !toRemove.has(f));
-        fruits.push(...newFruits);
-      } while (merged);
     }
 
     function drawMarker() {
@@ -202,7 +184,7 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawMarker();
       for (const fruit of fruits) fruit.update();
-      checkCollisions();
+      fruits = fruits.filter(f => f.alive);
       for (const fruit of fruits) fruit.draw();
 
       if (fruits.some(f => f.y - f.radius <= 0)) {
