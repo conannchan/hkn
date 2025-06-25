@@ -2,18 +2,16 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>hkngame</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スイカっぽいゲーム</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #fff; font-family: sans-serif; }
-    canvas { display: block; margin: 0 auto; background: #f8f8f8; width: 35%; height: auto; }
+    body { margin: 0; background: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+    canvas { background: #f8f8f8; width: 100vw; max-width: 400px; height: 75vh; }
     #scoreBoard {
-      position: fixed;
-      top: 10px;
-      left: 10px;
       font-size: 24px;
       font-weight: bold;
       color: #333;
-      z-index: 10;
+      margin: 10px 0;
     }
     #gameOver {
       position: absolute;
@@ -24,13 +22,40 @@
       color: red;
       display: none;
       font-weight: bold;
+      z-index: 100;
+    }
+    #controls {
+      margin: 10px 0;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    .btn {
+      font-size: 18px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+      flex: 1;
+    }
+    .btn:active {
+      background-color: #45a049;
     }
   </style>
 </head>
 <body>
   <div id="scoreBoard">Score: 0</div>
   <div id="gameOver">Game Over</div>
-  <canvas id="gameCanvas" width="600" height="700"></canvas>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <div id="controls">
+    <button class="btn" onclick="moveLeft()">←</button>
+    <button class="btn" onclick="dropFruit()">落とす</button>
+    <button class="btn" onclick="moveRight()">→</button>
+  </div>
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -95,15 +120,8 @@
           const dy = this.y - other.y;
           const dist = Math.hypot(dx, dy);
           if (dist < this.radius + other.radius) {
-            const angle = Math.atan2(dy, dx);
-            const overlap = this.radius + other.radius - dist;
-            const moveX = Math.cos(angle) * overlap * 0.5;
-            const moveY = Math.sin(angle) * overlap * 0.5;
-            this.x += moveX;
-            this.y += moveY;
-            other.x -= moveX;
-            other.y -= moveY;
             this.vy = 0;
+            break;
           }
         }
 
@@ -146,7 +164,7 @@
             const dy = f1.y - f2.y;
             const dist = Math.hypot(dx, dy);
 
-            if (dist < f1.radius + f2.radius) {
+            if (dist < (f1.radius + f2.radius) * 0.9) {
               if (f1.type + 1 < numTypes) {
                 const newFruit = new Fruit((f1.x + f2.x) / 2, (f1.y + f2.y) / 2, f1.type + 1);
                 newFruit.vx = (f1.vx + f2.vx) / 2;
